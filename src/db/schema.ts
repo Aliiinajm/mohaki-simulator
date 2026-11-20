@@ -1,4 +1,4 @@
-import { pgTable, serial, text, doublePrecision, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, bigint, text, doublePrecision, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
 
 /** Normalized compound cache (PubChem → CACTUS → ChemSpider). */
 export const compounds = pgTable("compounds", {
@@ -35,7 +35,7 @@ export const apiCache = pgTable("api_cache", {
 
 /** AI land-cover analyses for the agriculture section. */
 export const agriAnalyses = pgTable("agri_analyses", {
-  id: serial("id").primaryKey(),
+  id: bigint("id", { mode: "number" }).primaryKey(),
   bbox: jsonb("bbox").notNull(),
   grid: text("grid").notNull(),
   meta: jsonb("meta").notNull(),
@@ -45,7 +45,7 @@ export const agriAnalyses = pgTable("agri_analyses", {
 /** Tree planting plans generated for an analysis. */
 export const agriPlans = pgTable("agri_plans", {
   id: serial("id").primaryKey(),
-  analysisId: integer("analysis_id").notNull(),
+  analysisId: bigint("analysis_id", { mode: "number" }).notNull(),
   species: text("species").notNull(),
   trees: integer("trees").notNull(),
   stats: jsonb("stats").notNull(),
