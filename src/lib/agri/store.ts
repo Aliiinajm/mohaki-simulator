@@ -22,16 +22,37 @@ function store(): Map<number, Entry> {
   return g.__nabdAgriStore;
 }
 
+function assertStringGrid(grid: unknown): string {
+  if (typeof grid !== "string") {
+    throw new Error(`قيمة grid المطلوبة نصية ولكن تم الاستلام كـ ${typeof grid}`);
+  }
+  return grid;
+}
+
 /** Store an analysis without a database row and return its id. */
-export function rememberAnalysis(grid: string, meta: AnalysisMeta): number {
+export function rememberAnalysis(grid: unknown, meta: AnalysisMeta): number {
   const s = store();
-  // Keep ids clearly separated from real database ids.
-  g.__nabdAgriSeq = Math.max(g.__nabdAgriSeq ?? 0, Date.now()) + 1;
+  const safeGrid = assertStringGrid(grid);
+
+  // Ensure meta is valid before storing.
+  if (!meta || typeof meta.width !== "number" || typeof meta.height !== "number") {
+    throw new Error("بيانات التعريف (meta) ناقصة الأبعاد المطلوبة");
+  }
+
+  // Keep ids clearly separated from real database ids (use large numbers to avoid collision).
+  const base = Math.max(g.__nabdAgriSeq ?? 0, Date.now());
+  g.__nabdAgriSeq = base + 1;
   const id = g.__nabdAgriSeq;
-  s.set(id, { grid, meta, expires: Date.now() + TTL_MS });
-  // Evict oldest / expired entries
+  s.set(id, { grid: safeGrid, meta, expires: Date.now() + TTL_MS });
+
+  // Evict oldest / expired entries one at a time to keep O(n) bounded.
+  let evicted = 0;
   for (const [k, v] of s) {
-    if (v.expires < Date.now() || s.size > MAX_ENTRIES) s.delete(k);
+    if (evicted >= 5) break;
+    if (v.expires < Date.now() || s.size > MAX_ENTRIES) {
+      s.delete(k);
+      evicted++;
+    }
   }
   return id;
 }

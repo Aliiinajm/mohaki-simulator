@@ -542,21 +542,53 @@ function mulberry32(a: number) {
 export type PlanResult = ReturnType<typeof planTrees>;
 
 export function planTrees(gridStr: string, meta: AnalysisMeta, speciesId: string, density: "dense" | "normal" | "sparse", seed = 1, tolerance = 0.15) {
-  const rawGrid = typeof gridStr === "string"
-  ? gridStr
-  : gridStr == null
-    ? ""
-    : String(gridStr);
+  // --- Strict input validation -------------------------------------------------
+  if (typeof gridStr !== "string" || gridStr.length === 0) {
+    throw new Error(`رابط التحليل غير صالح: الشبكة نصية فارغة أو غير نصية (النوع: ${typeof gridStr})`);
+  }
+  const rawGrid = gridStr;
+
+  if (!meta || typeof meta.width !== "number" || typeof meta.height !== "number") {
+    throw new Error(`رابط التحليل غير صالح: بيانات التعريف (meta) ناقصة الأبعاد`);
+  }
+  const { width: W, height: H, cellSize: cell, bbox: b } = meta;
+  if (!Number.isFinite(W) || !Number.isFinite(H) || W <= 0 || H <= 0) {
+    throw new Error(`رابط التحليل غير صالح: أبعاد الشبكة غير صحيحة (width=${W}, height=${H})`);
+  }
+  if (!Number.isFinite(cell) || cell <= 0) {
+    throw new Error(`رابط التحليل غير صالح: حجم الخلية غير صحيح (cellSize=${cell})`);
+  }
+  if (!b || typeof b.south !== "number" || typeof b.west !== "number" || typeof b.north !== "number" || typeof b.east !== "number") {
+    throw new Error(`رابط التحليل غير صالح: إحداثيات الحيز (bbox) ناقصة أو غير صحيحة`);
+  }
+  if (W * H > 5_000_000) {
+    throw new Error(`رابط التحليل غير صالح: الشبكة كبيرة جداً (${W}×${H} = ${Math.round(W * H).toLocaleString()} خلية)`);
+  }
+
   const sp = treeById(speciesId);
   if (!sp) throw new Error("نوع الشجرة غير معروف");
-  const { width: W, height: H, cellSize: cell, bbox: b } = meta;
   const { mLng } = bboxMetrics(b);
+
+  // --- صحة الشبكة (grid) 맹ًى قبل أي حساب ---
+  const expectedLen = W * H;
+  if (typeof rawGrid !== "string" || rawGrid.length === 0) {
+    throw new Error(`رابط التحليل غير صالح: الشبكة (grid) [${rawGrid?.constructor?.name ?? typeof rawGrid}] غير نصية أو فارغة`);
+  }
+  if (rawGrid.length !== expectedLen) {
+    console.warn(`[planTrees] طول الشبكة ${rawGrid.length} لا يطابق المتوقع ${expectedLen} (width=${W}, height=${H}). سيتم تعويض النقص بالصفر.`);
+  }
+
   const grid = new Uint8Array(W * H);
- for (let i = 0; i < grid.length; i++) {
-  const code = i < rawGrid.length ? rawGrid.charCodeAt(i) - 48 : 0;
-  grid[i] = Number.isFinite(code) ? code : 0;
-}
+  for (let i = 0; i < grid.length; i++) {
+    let digit: number = 0;
+    if (i < rawGrid.length) {
+      digit = rawGrid.charCodeAt(i) - 48;
+    }
+    grid[i] = (digit >= 0 && digit <= 11) ? (digit | 0) : 0;
+  }
   const tol = Math.min(0.3, Math.max(0.05, tolerance));
+  const cap = Math.max(2, Math.round(sp.spacing / (mLng * 1.42)))
+    + (density === "dense" ? -2 : density === "sparse" ? 0 : -1);
 
   // Chamfer distance transforms (in cells) to different obstacle families
   const INF = 1e9;

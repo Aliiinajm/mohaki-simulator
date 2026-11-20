@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
 import type { AnalysisMeta, BBox, PlanResult } from "@/lib/agri/analyze";
 import { LAND_CLASSES, TREES, treeById } from "@/lib/agri/trees";
 
@@ -100,12 +100,24 @@ export function AgriPlanner() {
   const [error, setError] = useState("");
   const [msgIdx, setMsgIdx] = useState(0);
 
+  // React key that rotates whenever the analysis changes so the overlay map
+  // layer fully re-initializes rather than reusing a stale painted grid from
+  // the previous analysis (historical cause of empty/duplicate-zero results).
+  const overlayKey = useRef<string>(`grid-${Date.now()}`);
+
   useEffect(() => {
     if (step !== "analyzing") return;
     setMsgIdx(0);
     const t = setInterval(() => setMsgIdx((i) => Math.min(i + 1, ANALYZE_MSGS.length - 1)), 2600);
     return () => clearInterval(t);
   }, [step]);
+
+  // When a new analysis arrives, rotate the overlay key so the layer tears
+  // down and re-mounts with the fresh grid string.
+  useEffect(() => {
+    if (!analysis) return;
+    overlayKey.current = `grid-${analysis.id}-${Date.now()}`;
+  }, [analysis]);
 
   const dims = useMemo(() => {
     if (!bbox) return null;
@@ -128,7 +140,7 @@ export function AgriPlanner() {
       if (!r.ok) throw new Error(j.error || "فشل التحليل");
       setAnalysis(j);
       setOverlayOn(true);
-      setSpecies(j.meta.recommendations[0]?.id || "neem");
+      setSpecies(j.meta?.recommendations?.[0]?.id || "neem");
       setStep("analyzed");
     } catch (e) {
       setError((e as Error).message);
@@ -164,7 +176,19 @@ export function AgriPlanner() {
 
   const sp = treeById(species);
   const meta = analysis?.meta;
-  const overlay = analysis ? { grid: analysis.grid, width: analysis.meta.width, height: analysis.meta.height, bbox: analysis.meta.bbox, visible: overlayOn } : null;
+  // Rotate the overlay React key whenever the analysis changes so the map
+  // layer fully re-initializes and never carries stale painted cells from a
+  // previous analysis (historical cause of empty/duplicate-zero distributions).
+  // When a new analysis arrives, rotate the overlay key so the layer tears
+  // down and re-mounts with the fresh grid string.
+  useEffect(() => {
+    if (!analysis) return;
+    overlayKey.current = `grid-${analysis.id}-${Date.now()}`;
+  }, [analysis]);
+
+  // Overlay layer: rotate the React key whenever the analysis changes so the
+  // map never reuses a stale painted grid from a previous run.
+  const overlay = analysis ? { grid: analysis.grid, width: analysis.meta.width, height: analysis.meta.height, bbox: analysis.meta.bbox, key: overlayKey.current, visible: overlayOn } : null;
   const treeLayer = plan && sp ? { positions: plan.positions, radius: plan.canopyRadius, color: sp.color, key: `${analysis?.id}-${species}-${density}` } : null;
 
   return (

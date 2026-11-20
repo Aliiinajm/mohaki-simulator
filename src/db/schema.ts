@@ -1,4 +1,4 @@
-import { pgTable, serial, bigint, text, doublePrecision, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, bigint, text, doublePrecision, integer, jsonb, timestamp, foreignKey } from "drizzle-orm/pg-core";
 
 /** Normalized compound cache (PubChem → CACTUS → ChemSpider). */
 export const compounds = pgTable("compounds", {
@@ -50,4 +50,9 @@ export const agriPlans = pgTable("agri_plans", {
   trees: integer("trees").notNull(),
   stats: jsonb("stats").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  fkAnalysis: foreignKey({
+    columns: [table.analysisId],
+    foreignColumns: [agriAnalyses.id],
+  }),
+}));
