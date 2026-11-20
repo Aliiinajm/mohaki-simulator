@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.bg-grid {
+  background-image: linear-gradient(rgba(56, 189, 248, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+.glass {
+  background: linear-gradient(180deg, rgba(15, 30, 55, 0.75), rgba(8, 18, 36, 0.75));
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.glow-text {
+  background: linear-gradient(90deg, #22d3ee, #34d399, #22d3ee);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 6s linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.pulse-line path {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: draw 3.2s ease-in-out infinite;
+}
+@keyframes draw {
+  0% {
+    stroke-dashoffset: 1200;
+  }
+  60% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1200;
+  }
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(4deg);
+  }
+}
+.floaty {
+  animation: floaty 7s ease-in-out infinite;
+}
+
+@keyframes bubble {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-120px) scale(1.1);
+    opacity: 0;
+  }
+}
+.bubble {
+  animation: bubble 2.4s ease-in infinite;
+}
+
+@keyframes settle {
+  0% {
+    transform: translateY(-80px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.settle {
+  animation: settle 2.5s ease-out forwards;
+}
+
+@keyframes flame {
+  0%,
+  100% {
+    transform: scaleY(1) translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scaleY(1.25) translateY(-4px);
+    opacity: 1;
+  }
+}
+.flame {
+  transform-origin: bottom center;
+  animation: flame 0.6s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 0.45s ease-out both;
+}
+
+.mol-svg svg {
+  width: 100%;
+  height: 100%;
+}
+
+.katex {
+  font-size: 1.35em;
+}
+.katex-display {
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+}
+
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+}
+
+input[type="range"] {
+  accent-color: #22d3ee;
+}
+
+.pixelated-overlay {
+  image-rendering: pixelated;
+}
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #0f172a;
+}
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  background: rgba(7, 18, 38, 0.7) !important;
+  color: #94a3b8 !important;
+}
+.leaflet-control-attribution a {
+  color: #67e8f9 !important;
+}
