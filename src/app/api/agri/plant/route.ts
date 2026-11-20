@@ -8,13 +8,15 @@ import { treeById } from "@/lib/agri/trees";
 
 export const dynamic = "force-dynamic";
 
+interface PlantRequestBody {
+  analysisId?: number | string;
+  speciesId?: string;
+  density?: string;
+  tolerance?: number;
+}
+
 export async function POST(req: NextRequest) {
-  let body: {
-    analysisId?: number | string;
-    speciesId?: string;
-    density?: string;
-    tolerance?: number;
-  };
+  let body: PlantRequestBody;
 
   try {
     body = await req.json();
@@ -22,11 +24,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "طلب غير صالح: توقع JSON" }, { status: 400 });
   }
 
-  const rawId = body.analysisId;
-  const id = Number(rawId);
+  const id = Number(body.analysisId);
   const sp = treeById(String(body.speciesId || ""));
 
-  if (!Number.isFinite(id) || id <= 0 || !sp) {
+  if (!Number.isSafeInteger(id) || id <= 0 || !sp) {
     return Response.json(
       {
         error: "بيانات ناقصة: التحليل أو نوع الشجرة",
@@ -81,7 +82,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const tol = Number.isFinite(Number(body.tolerance)) ? Number(body.tolerance) : 0.15;
+    const rawTol = Number(body.tolerance);
+    const tol = Number.isFinite(rawTol) ? rawTol : 0.15;
     const plan = planTrees(record.grid, record.meta, sp.id, density, id, tol);
     const { positions, ...stats } = plan;
 
