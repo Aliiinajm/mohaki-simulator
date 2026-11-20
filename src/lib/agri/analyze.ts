@@ -542,12 +542,20 @@ function mulberry32(a: number) {
 export type PlanResult = ReturnType<typeof planTrees>;
 
 export function planTrees(gridStr: string, meta: AnalysisMeta, speciesId: string, density: "dense" | "normal" | "sparse", seed = 1, tolerance = 0.15) {
+  const rawGrid = typeof gridStr === "string"
+  ? gridStr
+  : gridStr == null
+    ? ""
+    : String(gridStr);
   const sp = treeById(speciesId);
   if (!sp) throw new Error("نوع الشجرة غير معروف");
   const { width: W, height: H, cellSize: cell, bbox: b } = meta;
   const { mLng } = bboxMetrics(b);
   const grid = new Uint8Array(W * H);
-  for (let i = 0; i < grid.length; i++) grid[i] = gridStr.charCodeAt(i) - 48;
+ for (let i = 0; i < grid.length; i++) {
+  const code = i < rawGrid.length ? rawGrid.charCodeAt(i) - 48 : 0;
+  grid[i] = Number.isFinite(code) ? code : 0;
+}
   const tol = Math.min(0.3, Math.max(0.05, tolerance));
 
   // Chamfer distance transforms (in cells) to different obstacle families

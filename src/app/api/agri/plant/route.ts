@@ -84,7 +84,14 @@ export async function POST(req: NextRequest) {
   try {
     const rawTol = Number(body.tolerance);
     const tol = Number.isFinite(rawTol) ? rawTol : 0.15;
-    const plan = planTrees(record.grid, record.meta, sp.id, density, id, tol);
+   const plan = planTrees(
+  typeof record.grid === "string" ? record.grid : String(record.grid ?? ""),
+  record.meta,
+  sp.id,
+  density,
+  id,
+  tol
+);
     const { positions, ...stats } = plan;
 
     await withDb(async (d) => {
