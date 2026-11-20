@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
-import { isDbConfigured, withDb } from "@/db";
+import { db, isDbConfigured, withDb } from "@/db";
 import { agriAnalyses, agriPlans } from "@/db/schema";
 import { planTrees, type AnalysisMeta } from "@/lib/agri/analyze";
 import { getAnalysis } from "@/lib/agri/store";
@@ -27,9 +27,16 @@ export async function POST(req: NextRequest) {
 
   const density = body.density === "dense" || body.density === "sparse" ? body.density : "normal";
 
-  const rows = await withDb((d) =>
-    d.select().from(agriAnalyses).where(eq(agriAnalyses.id, id)).limit(1)
-  );
+  let dbError: string | null = null;
+  let rows: Awaited<ReturnType<typeof withDb<typeof agriAnalyses.$inferSelect[]>>> = null;
+
+  if (isDbConfigured()) {
+    try {
+      rows = await db.select().from(agriAnalyses).where(eq(agriAnalyses.id, id)).limit(1);
+    } catch (e) {
+      dbError = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    }
+  }
 
   const memoryRecord = getAnalysis(id);
   const record =
@@ -47,6 +54,7 @@ export async function POST(req: NextRequest) {
           dbConfigured: isDbConfigured(),
           dbRowsFound: rows ? rows.length : null,
           memoryFound: Boolean(memoryRecord),
+          dbError,
         },
       },
       { status: 404 }
